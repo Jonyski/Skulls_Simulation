@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "bots.h" // header file containing the Bot struct, its dependencies and some handy functions
+#include "bots.h" // header containing the Bot struct, its dependencies and some handy functions
+#include "simgame.h" // header containing the necessary tools to simulate 1 game of Skull
 
 /* the first argument should be the number of games simulated
    and the second should be the number of bots playing (3 to 6) */
