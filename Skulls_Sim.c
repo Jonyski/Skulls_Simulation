@@ -87,7 +87,7 @@ struct TrustingLevel* initializeTrust(int botID, int numOfBots) {
 		}
 	}
 	return baseTrustLevels;
-};
+}
 
 struct Token* initializeHand() {
 	struct Token* baseHand = (struct Token*)malloc(4 * sizeof(struct Token));
@@ -103,7 +103,7 @@ struct Token* initializeHand() {
 		baseHand[i].status = REMOVED;
 	}
 	return baseHand;
-};
+}
 
 struct Bot* initializeBots(int numOfBots) {
 	int id = 0;
@@ -125,5 +125,5 @@ struct Bot* initializeBots(int numOfBots) {
 		id++;
 	}
 	return botsList;
-};
+}
 
