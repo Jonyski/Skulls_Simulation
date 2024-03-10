@@ -37,9 +37,9 @@ struct Bot {
 
 struct TrustingLevel* initializeTrust(int botID, int numOfBots) {
 	struct TrustingLevel* baseTrustLevels = (struct TrustingLevel*)malloc(numOfBots * sizeof(struct TrustingLevel));
-   if (baseTrustLevels == NULL) {
-      exit(1);
-   }
+	if (baseTrustLevels == NULL) {
+		exit(1);
+	}
 
    // The bot should trust itself but doesn't know at first if it can trust in the other bots
 	for(int targetID = 0; targetID < numOfBots; targetID++) {
@@ -59,8 +59,8 @@ struct TrustingLevel* initializeTrust(int botID, int numOfBots) {
 struct Token* initializeHand() {
 	struct Token* baseHand = (struct Token*)malloc(4 * sizeof(struct Token));
 	if (baseHand == NULL) {
-      exit(1);
-   }
+		exit(1);
+	}
 
 	// 1 skull
 	strcpy(baseHand[0].tokenType, "skull");
@@ -86,6 +86,7 @@ struct Bot* initializeBots(int numOfBots) {
 		botsList[id].trustLevels = baseTrustLevels;
 		botsList[id].oddsToStartWithSkull = 0.5;
 		botsList[id].initialOddsToAddToken = 0.5;
+	
 		botsList[id].oddsToAddMoreTokens = 0.5;
 		botsList[id].oddsToAddSkull = 0.5;
 		botsList[id].oddsToBluff = 0.5;
