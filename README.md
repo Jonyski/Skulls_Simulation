@@ -1,20 +1,20 @@
-#Skull Simulation
+# Skull Simulation
 
-##General observations
+## General observations
 
 This project is being created as an attempt to find the mythological "optimal strategy" that the game's creators claim exists.
 
 I've played Skull a lot, but it's still conceptually hard to create bots for this game (as in I'm not sure about the properties i chose to give them), so if you have any suggestions please create an issue or make a push request.
 
-##What is Skull and how is it played?
+## What is Skull and how is it played?
 
 Skull is a game about betting and bluffing played by 3 to 6 players.
 
-###Objective
+### Objective
 
 In the game, your objective is to win 2 rounds by turning an X amount of *flower tokens* face up (this X amount is determined in the betting phase of each round, but we will se that later). if nobody manages to win 2 rounds, the last person to survive wins.
 
-###Start
+### Start
 
 At the start, each player has 4 tokens, of which 3 are *flower tokens* and 1 is a *skull token*. They also have a little platform to pile their tokens whenever they are played.
 
@@ -22,7 +22,7 @@ The first thing that happens in each round is that every player will put 1 token
 
 In short, the players will pile their tokens one after the other until someone decides to make a bet.
 
-###Betting phase
+### Betting phase
 
 A bet in Skull is how many flower tokens someone thinks they can turn face up without encountering a skull token. There are some conditions to the order in which the tokens can be revealed that will be explained later.
 
@@ -33,7 +33,7 @@ So, when someone makes a bet and says, for example, "_I make a bet of 3_", we en
 
 and the players will continue doing this until there is only one person has not moved their pile (the person with the highest bet). Now we enter the final phase of the round, because if the person made a bet of 5, they will have to reveal 5 flowers without being killed by a skull.
 
-###Final phase
+### Final phase
 
 The person with the highest bet will start revealing the tokens in the order they please as long as they follow these rules
 
@@ -46,7 +46,7 @@ What happens if you reveal a skull? If the skull is yours, you will chose a toke
 
 But, if you manage to reveal as many flowers as you had bet you would reveal, then you won a round. And as has already been stated before, winning 2 rounds means you win the game.
 
-###Common human strategies
+### Common human strategies
 
 The game seems simple, but there are many many many ways to mess with your opponents, bluff, surprise people and optimize your chances. Here's a list of some common tactics:
 
