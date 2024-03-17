@@ -9,7 +9,7 @@ struct WinnerStats {
 	float avgTokensPerRound;
 	float avgSkullsPerRound;
 	float avgFinalBet;
-}
+};
 
 // The overall statistics and results of all bots together
 struct GameResults {
@@ -21,15 +21,15 @@ struct GameResults {
 	float avgFinalBet;
 	int mostTrustedBotID;
 	int leastTrustedBotID;
-}
+};
 
-struct GameResults simulateGame(struct Bot* bots) {
+struct GameResults* simulateGame(struct Bot* bots) {
 	int gameIsOver = 0;
 	int botsWithPoints[6];
 	for (int i = 0; i <= 6; i++) {
 		botsWithPoints[i] = NULL_BOT_ID;
 	}
-	struct GameResults gameResults = (struct GameResults)malloc(sizeof(struct GameResults));
+	struct GameResults *gameResults = malloc(sizeof(struct GameResults));
 
 	while(!gameIsOver) {
 		// struct RoundResults roundResults = simulateRound(bots);
@@ -41,6 +41,7 @@ struct GameResults simulateGame(struct Bot* bots) {
 		//		insertToArray(roundResults.winnerID, botsWithPoints);
 		//	}
 		// }
+		gameIsOver = 1;
 	}
 
 	return gameResults;

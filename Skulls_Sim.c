@@ -12,7 +12,7 @@ int main(int argc, char const *argv[]) {
 	struct Bot* bots; // pointer to array objets (bots)
 
 	if (3 > numOfBots || 6 < numOfBots) {
-		printf("you can't simulate with %d bots :[\nplease try again with 3 to 6 bots :]", numOfBots);
+		printf("you can't simulate with %d bots :[\nplease try again with 3 to 6 bots :]\n", numOfBots);
 		return 1;
 	} else {
 		bots = initializeBots(numOfBots);
