@@ -4,14 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+// AVAILABLE tokens are on hand, USING tokens are on the pile, and REMOVED tokens were lost
 enum TokenStatus {
 	AVAILABLE,
 	USING,
 	REMOVED
 };
 
+// a singular token that can be of type "flower" or "skull"
 struct Token {
-	char tokenType[10];
+	char tokenType[6];
 	enum TokenStatus status;
 };
 
@@ -21,10 +23,17 @@ struct TrustingLevel {
 	float momentaryTrustLevel; // how much do we trust his next token is a flower
 };
 
+// nodes of a linked list that represents the pile of played tokens
+struct TokenNode {
+	struct Token token;
+	struct TokenNode* next;
+}
+
 struct Bot {
 	int botID;
 	int roundsWon;
 	struct Token hand[4];
+	struct TokenNode playedTokens;
 	struct TrustingLevel* trustLevels;
 	float oddsToStartWithSkull; // when the first token is played
 	float initialOddsToAddToken; // basically the odds to put the 2nd token
