@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "bots.h" // contains the Bot struct, its dependencies and some handy functions
-#include "simround.h" // contains the necessary tools to simulate 1 round of Skull
-#include "simgame.h" // contains the necessary tools to simulate 1 game of Skull
+#include "../headers/bots.h" // contains the Bot struct, its dependencies and some handy functions
+#include "../headers/simround.h" // contains the necessary tools to simulate 1 round of Skull
+#include "../headers/simgame.h" // contains the necessary tools to simulate 1 game of Skull
 
 /* the first argument should be the number of games simulated
    and the second should be the number of bots playing (3 to 6) */
