@@ -13,7 +13,7 @@ enum TokenStatus {
 
 // a singular token that can be of type "flower" or "skull"
 struct Token {
-	char tokenType[6];
+	char *tokenType;
 	enum TokenStatus status;
 };
 
@@ -27,7 +27,7 @@ struct TrustingLevel {
 struct TokenNode {
 	struct Token token;
 	struct TokenNode* next;
-}
+};
 
 struct Bot {
 	int botID;
@@ -72,11 +72,11 @@ struct Token* initializeHand() {
 	}
 
 	// 1 skull
-	strcpy(baseHand[0].tokenType, "skull");
+	baseHand[0].tokenType = "skull";
 	baseHand[0].status = AVAILABLE;
 	// 3 flowers
 	for(int i = 1; i <= 3; i++) {
-		strcpy(baseHand[i].tokenType, "flower");
+		baseHand[i].tokenType = "flower";
 		baseHand[i].status = REMOVED;
 	}
 	return baseHand;

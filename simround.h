@@ -17,7 +17,7 @@ struct BotRoundStats {
 	int skullsPlayed;
 	int finalBet;
 	int tokensRevealed; // how many of this bot's tokens were revealed
-}
+};
 
 struct RoundResults {
 	int winnerID;
@@ -28,11 +28,11 @@ struct RoundResults {
 };
 
 // makes a bot add its first token to its pile
-void selectFirtToken(struct Bot bot) {
+void selectFirstToken(struct Bot* bot) {
 	struct Token newToken;
 	newToken.status = USING;
 
-	if(rand_float <= bots[i].oddsToStartWithSkull) {
+	if(rand_float <= bot->oddsToStartWithSkull) {
 		newToken.tokenType = "skull";
 	} else {
 		newToken.tokenType = "flower";
@@ -42,13 +42,13 @@ void selectFirtToken(struct Bot bot) {
 	firstTokenNode.token = newToken;
 	firstTokenNode.next = NULL;
 
-	bots[i].playedTokens = firstTokenNode;
+	bot->playedTokens = firstTokenNode;
 }
 
 // makes all bots add their first token to their piles
 void simulateFirstTokenSelection(struct Bot* bots, int numOfBots){
 	for (int i = 0; i < numOfBots; i++) {
-		selectFirtToken(bots[i]);
+		selectFirstToken(&bots[i]);
 		//testing
 		printf("%s\n", bots[i].playedTokens.token.tokenType);
 	}
@@ -61,23 +61,21 @@ void simulateFirstTokenSelection(struct Bot* bots, int numOfBots){
 	3- Betting
 	4- Revealing Tokens 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-struct RoundResults* simulateRound(struct Bot* bots, int startingBotID) {
+struct RoundResults* simulateRound(struct Bot bots[], int startingBotID, int numOfBots) {
 	struct RoundResults *roundResults = malloc(sizeof(struct RoundResults));
 
 	int currentPlayingBotID = startingBotID;
 	int roundIsOver = 0; // 0 as False
-	int numOfBots = sizeof(bots) / sizeof(bots[0]);
 
-	simulateFirstTokenSelection();
+	simulateFirstTokenSelection(bots, numOfBots);
 
 	for (int i = currentPlayingBotID; !roundIsOver; i++) {
-		
-
 		// updates the current playing bot with their order in mind
 		currentPlayingBotID = i % numOfBots;
+		roundIsOver = 1;
 	}
 
-	return roundResults
+	return roundResults;
 }
 
 #endif
