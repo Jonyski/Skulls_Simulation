@@ -166,6 +166,9 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID, int num
 		currentPlayingBotID = (i + 1) % numOfBots;
 	}
 
+	for(int i = 0; i < numOfBots; i++) {
+		softResetBotHand(&(bots[i]));
+	}
 	roundIsOver = 1;
 	return roundResults;
 }
