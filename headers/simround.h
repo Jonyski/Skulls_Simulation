@@ -24,7 +24,7 @@ struct RoundResults {
 	int winnerID;
 	int deadBotID;
 	int tokensPlayed;
-	int skullsPlayed;
+	 int skullsPlayed;
 	int finalBet;
 };
 
@@ -39,9 +39,9 @@ void selectFirstToken(struct Bot* bot) {
 		newToken.tokenType = "flower";
 	}
 
-	struct TokenNode firstTokenNode;
-	firstTokenNode.token = newToken;
-	firstTokenNode.next = NULL;
+	struct TokenNode* firstTokenNode = malloc(sizeof(struct TokenNode));
+	firstTokenNode->token = newToken;
+	firstTokenNode->next = NULL;
 
 	bot->playedTokens = firstTokenNode;
 
@@ -49,17 +49,17 @@ void selectFirstToken(struct Bot* bot) {
 }
 
 // makes all bots add their first token to their piles
-void simulateSetupPhase(struct Bot* bots, int numOfBots){
+void simulateSetupPhase(struct Bot* bots){
 	for(int i = 0; i < numOfBots; i++) {
 		selectFirstToken(&bots[i]);
-		//testing
+		// testing
 		printf("the bot %d selects the first token \"%s\"\n"
-			  , i, bots[i].playedTokens.token.tokenType);
+			  , i, bots[i].playedTokens->token.tokenType);
 	}
 }
 
 void pileToken(struct Bot* bot, char tokenType) {
-	struct TokenNode* currentTokenNode = &(bot->playedTokens);
+	struct TokenNode* currentTokenNode = bot->playedTokens;
 	int topOfPileReached = 0;
 
 	while(!topOfPileReached) {
@@ -81,7 +81,6 @@ void pileToken(struct Bot* bot, char tokenType) {
 	currentTokenNode->next = tokenToInsert;
 
 	setTokenToUsing(bot, tokenType);
-
 	printf("the bot %d chose the token %c\n", bot->botID, tokenType);
 }
 
@@ -122,17 +121,28 @@ int addMoreToken(struct Bot* bot) {
 	return 1;
 }
 
-// returns 0 (false) when it refuses to add a token
+// returns 0 (false) when the bot refuses to add a token
 int tryAddingToken(struct Bot* bot) {
 	int result;
 
-	if(bot->playedTokens.next == NULL) {
+	if(bot->playedTokens->next == NULL) {
 		result = addSecondToken(bot);
 	} else {
 		result = addMoreToken(bot);
 	}
 
 	return result;
+}
+
+int makeInitialBet(struct Bot* bot) {
+	int bet = calculateBotBet(bot, 0);
+
+	return bet;
+}
+
+int tryBetting(struct Bot* bot) {
+	int result;
+
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
@@ -142,29 +152,37 @@ int tryAddingToken(struct Bot* bot) {
 	3- Betting
 	4- Revealing Tokens 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-struct RoundResults* simulateRound(struct Bot bots[], int startingBotID, int numOfBots) {
+struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	struct RoundResults *roundResults = malloc(sizeof(struct RoundResults));
+	enum RoundPhase currentPhase = SETUP_PHASE;
 	int currentPlayingBotID = startingBotID;
 	int roundIsOver = 0; // 0 as False
-	enum RoundPhase currentPhase = SETUP_PHASE;
+	int currentBet = 0;
 
 	// phase 1: done
-	simulateSetupPhase(bots, numOfBots);
+	simulateSetupPhase(bots);
 	currentPhase = PILING_PHASE;
 
 	// phase 2 loop 
 	for(int i = currentPlayingBotID; currentPhase == PILING_PHASE; i++) {
 		int pilingIsOver = !(tryAddingToken(&bots[currentPlayingBotID]));
+
+		// phase 3 initial step
+		if(pilingIsOver) {currentBet = makeInitialBet(&(bots[currentPlayingBotID]));}
 		currentPhase = pilingIsOver ? BETTING_PHASE : PILING_PHASE;
 
 		// updates the current playing bot while maintaining their order
 		currentPlayingBotID = (i + 1) % numOfBots;
 	}
 
-	for(int i = currentPlayingBotID; currentPhase == BETTING_PHASE; i++) {
-		currentPhase = REVEALING_PHASE;
-		currentPlayingBotID = (i + 1) % numOfBots;
-	}
+	// phase 3 loop
+	// for(int i = currentPlayingBotID; currentPhase == BETTING_PHASE; i++) {
+	// 	printf("BETTING PHASE ENTERED\n");
+	// 	int bettingIsOver = !(tryBetting(&bots[currentPlayingBotID]));
+
+	// 	currentPhase = bettingIsOver ? REVEALING_PHASE : BETTING_PHASE;
+	// 	currentPlayingBotID = (i + 1) % numOfBots;
+	// }
 
 	for(int i = 0; i < numOfBots; i++) {
 		softResetBotHand(&(bots[i]));

@@ -35,18 +35,19 @@ struct Bot {
 	int botID;
 	int roundsWon;
 	struct Token hand[HAND_SIZE];
-	struct TokenNode playedTokens;
-	struct TrustingLevel* trustLevels;
+	struct TokenNode* playedTokens;
+	struct TrustingLevel* trustLevels; // will be used to determine the bet
 	float oddsToStartWithSkull; // when the first token is played
 	float initialOddsToAddToken; // basically the odds to put the 2nd token
 	float oddsToAddMoreTokens; // decreases as more tokens are played
 	float oddsToAddSkull; // if the bot is adding a token instead of betting
+	float bettingConfidence; // overall confidence to make bets
 	float oddsToBluff; // only matters if its skull token is being used
 	float oddsToGoBerserk; // The omega bet: going all in
 	float confidenceToIncreaseBet; // it's only part of the formula to determine the odds of increasing the bet
 };
 
-struct TrustingLevel* initializeTrust(int botID, int numOfBots) {
+struct TrustingLevel* initializeTrust(int botID) {
 	struct TrustingLevel* baseTrustLevels = (struct TrustingLevel*)malloc(numOfBots * sizeof(struct TrustingLevel));
 	if(baseTrustLevels == NULL) {
 		exit(1);
@@ -84,20 +85,20 @@ struct Token* initializeHand() {
 	return baseHand;
 }
 
-struct Bot* initializeBots(int numOfBots) {
+struct Bot* initializeBots() {
 	int id = 0;
 	struct Bot* botsList = (struct Bot*)malloc(numOfBots * sizeof(struct Bot));
 	struct Token* baseHand = initializeHand();
 
 	for(int i = 0; i < numOfBots; i++) {
-		struct TrustingLevel* baseTrustLevels = initializeTrust(id, numOfBots);
+		struct TrustingLevel* baseTrustLevels = initializeTrust(id);
 		botsList[id].botID = id;
 		botsList[id].roundsWon = 0;
 		memcpy(botsList[id].hand, baseHand, HAND_SIZE * sizeof(baseHand[0]));
+		botsList[id].playedTokens = NULL;
 		botsList[id].trustLevels = baseTrustLevels;
 		botsList[id].oddsToStartWithSkull = 0.5;
 		botsList[id].initialOddsToAddToken = 0.5;
-	
 		botsList[id].oddsToAddMoreTokens = 0.5;
 		botsList[id].oddsToAddSkull = 0.5;
 		botsList[id].oddsToBluff = 0.5;
@@ -105,15 +106,18 @@ struct Bot* initializeBots(int numOfBots) {
 		botsList[id].confidenceToIncreaseBet = 0.4;
 		id++;
 	}
+	free(baseHand);
 	return botsList;
 }
 
 // for memory management ease
-void freeBots(struct Bot* bots, int numOfBots) {
+void freeBots(struct Bot* bots) {
 	for(int i = 0; i < numOfBots; i++) {
 		free(bots[i].trustLevels);
+		bots[i].trustLevels = NULL;
 	}
 	free(bots);
+	bots = NULL;
 }
 
 int hasSkull(struct Bot bot) {
@@ -146,6 +150,15 @@ int setTokenToUsing(struct Bot* bot, char tokenType) {
 	return 0;
 }
 
+void freePile(struct TokenNode* node) {
+	if(node == NULL) {
+		return;
+	}
+	struct TokenNode* nextNode = node->next;
+	free(node);
+	freePile(nextNode);
+}
+
 // used at the end of each round to reset hand and
 void softResetBotHand(struct Bot* bot) {
 	for(int i = 0; i < HAND_SIZE; i++) {
@@ -153,7 +166,62 @@ void softResetBotHand(struct Bot* bot) {
 			bot->hand[i].status = AVAILABLE;
 		}
 	}
-	free(bot->playedTokens.next);
+	freePile(bot->playedTokens);
+	bot->playedTokens = NULL;
+}
+
+int getPileSize(struct Bot bot) {
+	int pileSize = 0;
+	struct TokenNode* currentTokenNode = bot.playedTokens;
+	while(currentTokenNode != NULL) {
+		pileSize++;
+		currentTokenNode = currentTokenNode->next;
+	}
+	return pileSize;
+}
+
+int getTotalTokensPlayed() {
+	int totalTokensPlayed = 0;
+	for(int i = 0; i < numOfBots; i++) {
+		totalTokensPlayed += getPileSize(bots[i]);
+	}
+	return totalTokensPlayed;
+}
+
+float generateTrustScore(struct Bot* bot) {
+	float trustScore = 0;
+	int totalTokensPlayed = 0;
+	for(int i = 0; i < numOfBots; i++) {
+		int pileSize = getPileSize(bots[i]);
+		trustScore += pileSize * bot->trustLevels[i].totalTrustLevel;
+		totalTokensPlayed += pileSize;
+	}
+	trustScore = trustScore/totalTokensPlayed;
+	return trustScore;
+}
+
+int calculateBotBet(struct Bot* bot, int currentBet) {
+	// probably goes something like this:
+	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	|	int bet;
+	|	trustScore = generateBotTrustScore()
+	|	confidence = bot->bettingConfidence
+	|	numOfTokens = getTotalTokensPlayed(bots)
+	|	hasPlayedSkull = hasPlayedSkull()
+	|	
+	|	currentConfidence = trustScore * (confidence * confidence)
+	|	
+	|	currentConfidence = currentBet > 0 ? currentConfidence * (confidenceToIncrease * confidenceToIncrease) : currentConfidence
+	|
+	|	if(hasPlayedSkull) {
+	|		currentCofidence *= pow(bot->oddsToBluff, 2)
+	|   }
+	|
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+	int bet;
+	int trustScore = generateTrustScore(bot);
+	int confidence = bot->bettingConfidence;
+	int numOfTokens = getTotalTokensPlayed();
 }
 
 #endif

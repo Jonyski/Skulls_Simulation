@@ -22,7 +22,7 @@ struct GameResults {
 	float avgFinalBet;
 };
 
-struct GameResults* simulateGame(struct Bot* bots, int numOfBots) {
+struct GameResults* simulateGame() {
 	struct GameResults* gameResults = malloc(sizeof(struct GameResults));
 	int gameIsOver = 0; // 0 as False
 	int botsWithPoints[6];
@@ -31,7 +31,7 @@ struct GameResults* simulateGame(struct Bot* bots, int numOfBots) {
 	}
 
 	while(!gameIsOver) {
-		struct RoundResults* roundResults = simulateRound(bots, 0, numOfBots);
+		struct RoundResults* roundResults = simulateRound(bots, 0);
 		// struct RoundResults roundResults = simulateRound(bots);
 		// if(roundResults.winnerID != NULL_BOT_ID) {
 		// 	if(isInArray(roundResults.winnerID, )) {
