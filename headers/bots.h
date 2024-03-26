@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define HAND_SIZE 4
+
 // AVAILABLE tokens are on hand, USING tokens are on the pile, and REMOVED tokens were lost
 enum TokenStatus {
 	AVAILABLE,
@@ -32,7 +34,7 @@ struct TokenNode {
 struct Bot {
 	int botID;
 	int roundsWon;
-	struct Token hand[4];
+	struct Token hand[HAND_SIZE];
 	struct TokenNode playedTokens;
 	struct TrustingLevel* trustLevels;
 	float oddsToStartWithSkull; // when the first token is played
@@ -46,7 +48,7 @@ struct Bot {
 
 struct TrustingLevel* initializeTrust(int botID, int numOfBots) {
 	struct TrustingLevel* baseTrustLevels = (struct TrustingLevel*)malloc(numOfBots * sizeof(struct TrustingLevel));
-	if (baseTrustLevels == NULL) {
+	if(baseTrustLevels == NULL) {
 		exit(1);
 	}
 
@@ -66,8 +68,8 @@ struct TrustingLevel* initializeTrust(int botID, int numOfBots) {
 }
 
 struct Token* initializeHand() {
-	struct Token* baseHand = (struct Token*)malloc(4 * sizeof(struct Token));
-	if (baseHand == NULL) {
+	struct Token* baseHand = (struct Token*)malloc(HAND_SIZE * sizeof(struct Token));
+	if(baseHand == NULL) {
 		exit(1);
 	}
 
@@ -77,7 +79,7 @@ struct Token* initializeHand() {
 	// 3 flowers
 	for(int i = 1; i <= 3; i++) {
 		baseHand[i].tokenType = "flower";
-		baseHand[i].status = REMOVED;
+		baseHand[i].status = AVAILABLE;
 	}
 	return baseHand;
 }
@@ -87,11 +89,11 @@ struct Bot* initializeBots(int numOfBots) {
 	struct Bot* botsList = (struct Bot*)malloc(numOfBots * sizeof(struct Bot));
 	struct Token* baseHand = initializeHand();
 
-	for (int i = 0; i < numOfBots; i++) {
+	for(int i = 0; i < numOfBots; i++) {
 		struct TrustingLevel* baseTrustLevels = initializeTrust(id, numOfBots);
 		botsList[id].botID = id;
 		botsList[id].roundsWon = 0;
-		memcpy(botsList[id].hand, baseHand, sizeof(baseHand));
+		memcpy(botsList[id].hand, baseHand, HAND_SIZE * sizeof(baseHand[0]));
 		botsList[id].trustLevels = baseTrustLevels;
 		botsList[id].oddsToStartWithSkull = 0.5;
 		botsList[id].initialOddsToAddToken = 0.5;
@@ -104,6 +106,44 @@ struct Bot* initializeBots(int numOfBots) {
 		id++;
 	}
 	return botsList;
+}
+
+// for memory management ease
+void freeBots(struct Bot* bots, int numOfBots) {
+	for(int i = 0; i < numOfBots; i++) {
+		free(bots[i].trustLevels);
+	}
+	free(bots);
+}
+
+int hasSkull(struct Bot bot) {
+	for(int i = 0; i < HAND_SIZE; i++) {
+		if(bot.hand[i].tokenType == "skull") {
+			return (bot.hand[i].status == AVAILABLE)? 1 : 0;
+		}
+	}
+}
+
+int hasFlower(struct Bot bot) {
+	for(int i = 0; i < HAND_SIZE; i++) {
+		if(bot.hand[i].tokenType == "flower" && bot.hand[i].status == AVAILABLE) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int setTokenToUsing(struct Bot* bot, char tokenType) {
+	char* realTokenType = tokenType == 'f' ? "flower" : "skull";
+
+	for(int i = 0; i < HAND_SIZE; i++) {
+		if(bot->hand[i].tokenType == realTokenType && bot->hand[i].status == AVAILABLE) {
+			bot->hand[i].status = USING;
+			return 1;
+		}
+	}
+	
+	return 0;
 }
 
 #endif
