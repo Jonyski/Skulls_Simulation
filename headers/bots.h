@@ -142,7 +142,7 @@ int setTokenToUsing(struct Bot* bot, char tokenType) {
 			return 1;
 		}
 	}
-	
+
 	return 0;
 }
 

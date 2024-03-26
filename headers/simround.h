@@ -59,12 +59,12 @@ void simulateSetupPhase(struct Bot* bots, int numOfBots){
 }
 
 void pileToken(struct Bot* bot, char tokenType) {
-	struct TokenNode currentTokenNode = bot->playedTokens;
+	struct TokenNode* currentTokenNode = &(bot->playedTokens);
 	int topOfPileReached = 0;
 
 	while(!topOfPileReached) {
-		if(currentTokenNode.next != NULL) {
-			currentTokenNode = *(currentTokenNode.next);
+		if(currentTokenNode->next != NULL) {
+			currentTokenNode = currentTokenNode->next;
 		} else {
 			topOfPileReached = 1;
 		}
@@ -78,7 +78,7 @@ void pileToken(struct Bot* bot, char tokenType) {
 	tokenToInsert->token = newToken;
 	tokenToInsert->next = NULL;
 
-	currentTokenNode.next = tokenToInsert;
+	currentTokenNode->next = tokenToInsert;
 
 	setTokenToUsing(bot, tokenType);
 
@@ -152,18 +152,21 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID, int num
 	simulateSetupPhase(bots, numOfBots);
 	currentPhase = PILING_PHASE;
 
-	// phases 2 and 3 are done in a loop because there is a determined sequence to the players actions
-	for(int i = currentPlayingBotID; !roundIsOver; i++) {
+	// phase 2 loop 
+	for(int i = currentPlayingBotID; currentPhase == PILING_PHASE; i++) {
+		int pilingIsOver = !(tryAddingToken(&bots[currentPlayingBotID]));
+		currentPhase = pilingIsOver ? BETTING_PHASE : PILING_PHASE;
 
-		if(currentPhase == PILING_PHASE) {
-			tryAddingToken(&bots[currentPlayingBotID]);
-		}
-
-		// updates the current playing while maintaining their order
-		currentPlayingBotID = i % numOfBots;
-		roundIsOver = 1;
+		// updates the current playing bot while maintaining their order
+		currentPlayingBotID = (i + 1) % numOfBots;
 	}
 
+	for(int i = currentPlayingBotID; currentPhase == BETTING_PHASE; i++) {
+		currentPhase = REVEALING_PHASE;
+		currentPlayingBotID = (i + 1) % numOfBots;
+	}
+
+	roundIsOver = 1;
 	return roundResults;
 }
 
