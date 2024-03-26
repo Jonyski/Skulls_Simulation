@@ -26,6 +26,8 @@ int main(int argc, char const *argv[]) {
 		free(gameResults);
 	}
 
-	free(bots);
+
+
+	freeBots(bots, numOfBots);
 	return 0;
 }
