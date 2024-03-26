@@ -146,4 +146,14 @@ int setTokenToUsing(struct Bot* bot, char tokenType) {
 	return 0;
 }
 
+// used at the end of each round to reset hand and
+void softResetBotHand(struct Bot* bot) {
+	for(int i = 0; i < HAND_SIZE; i++) {
+		if(bot->hand[i].status == USING) {
+			bot->hand[i].status = AVAILABLE;
+		}
+	}
+	free(bot->playedTokens.next);
+}
+
 #endif
