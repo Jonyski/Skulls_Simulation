@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
+#define rand_float (float)rand()/(float)RAND_MAX
 struct Bot* bots; // pointer to array objets (bots)
 int numOfBots;
 
@@ -24,13 +26,16 @@ int main(int argc, char const *argv[]) {
 	}
 
 	srand(time(NULL));
+	clock_t beginTime = clock();
 
 	for (int i = 0; i < numOfGames; i++){
 		struct GameResults* gameResults = simulateGame();
 		free(gameResults);
 	}
 
-
+	clock_t endTime = clock();
+	double runTime = (double)(endTime - beginTime) / CLOCKS_PER_SEC;
+	printf("the simulation took %lf seconds to complete\n", runTime);
 
 	freeBots(bots);
 	return 0;
