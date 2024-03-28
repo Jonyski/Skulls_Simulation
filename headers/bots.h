@@ -42,7 +42,7 @@ struct Bot {
 	float oddsToAddMoreTokens; // decreases as more tokens are played
 	float oddsToAddSkull; // if the bot is adding a token instead of betting
 	float bettingConfidence; // overall confidence to make bets
-	float oddsToBluff; // only matters if its skull token is being used
+	float bluffBoldness; // determines how likely a bot is to bluff a high bet
 	float oddsToGoBerserk; // The omega bet: going all in
 	float confidenceToIncreaseBet; // it's only part of the formula to determine the odds of increasing the bet
 };
@@ -101,7 +101,7 @@ struct Bot* initializeBots() {
 		botsList[id].initialOddsToAddToken = 0.5;
 		botsList[id].oddsToAddMoreTokens = 0.5;
 		botsList[id].oddsToAddSkull = 0.5;
-		botsList[id].oddsToBluff = 0.5;
+		botsList[id].bluffBoldness = 0.5;
 		botsList[id].oddsToGoBerserk = 0.06;
 		botsList[id].confidenceToIncreaseBet = 0.4;
 		id++;
@@ -159,7 +159,7 @@ void freePile(struct TokenNode* node) {
 	freePile(nextNode);
 }
 
-// used at the end of each round to reset hand and
+// used at the end of each round to reset hand and pile
 void softResetBotHand(struct Bot* bot) {
 	for(int i = 0; i < HAND_SIZE; i++) {
 		if(bot->hand[i].status == USING) {
@@ -200,28 +200,58 @@ float generateTrustScore(struct Bot* bot) {
 	return trustScore;
 }
 
+int hasPlayedSkull(struct Bot* bot) {
+	if(bot->hand[0].status == USING) {
+		return 1;
+	}
+	return 0;
+}
+
+float calculateBotConfidence(struct Bot* bot, int currentBet) {
+	float trustScore = generateTrustScore(bot);
+	float confidence = bot->bettingConfidence;
+	float situationalConfidence = currentBet == 0 ? bot->bettingConfidence : bot->confidenceToIncreaseBet;
+	int playedSkulllayedSkull = hasPlayedSkull(bot);
+	float totalConfidence = (5 * trustScore + 3 * ((2 * confidence + 3 * situationalConfidence) / 5)) / 8;
+	return totalConfidence;
+}
+
+int bluff(float boldness, float confidence, int numOfTokens) {
+	confidence = (3 * boldness + confidence) / 4;
+	int bluff = ceil(confidence * numOfTokens);
+	float variance = rand_float;
+	if(variance <= 0.1 && bluff > 0) {
+		return bluff - 1;
+	} else if(variance >= 0.9 && (bluff + 1 <= numOfTokens)) {
+		return bluff + 1;
+	} else {
+		return bluff;
+	}
+}
+
 int calculateBotBet(struct Bot* bot, int currentBet) {
-	// probably goes something like this:
-	/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	|	int bet;
-	|	trustScore = generateBotTrustScore()
-	|	confidence = bot->bettingConfidence
-	|	numOfTokens = getTotalTokensPlayed(bots)
-	|	hasPlayedSkull = hasPlayedSkull()
-	|	
-	|	currentConfidence = trustScore * (confidence * confidence)
-	|	
-	|	currentConfidence = currentBet > 0 ? currentConfidence * (confidenceToIncrease * confidenceToIncrease) : currentConfidence
-	|
-	|	if(hasPlayedSkull) {
-	|		currentCofidence *= pow(bot->oddsToBluff, 2)
-	|   }
-	|
-	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 	int bet;
-	int trustScore = generateTrustScore(bot);
-	int confidence = bot->bettingConfidence;
 	int numOfTokens = getTotalTokensPlayed();
+	int playedSkull = hasPlayedSkull(bot);
+	float confidence = calculateBotConfidence(bot, currentBet);
+
+	if(playedSkull && currentBet == 0) {
+		bet = bluff(bot->bluffBoldness, confidence, numOfTokens);
+	} else if(playedSkull && currentBet>0) {
+		bet = bluff(bot->bluffBoldness/2, confidence, numOfTokens);
+	} else if(rand_float <= bot->oddsToGoBerserk) {
+		bet = numOfTokens;
+	} else {
+		int variance = rand_float;
+		bet = ceil(confidence * numOfTokens);
+
+		if(variance <= 0.1 && bet > 0) {
+			bet += 1;
+		} else if(variance >= 0.9 && (bet + 1 <= numOfTokens)) {
+			bet -= 1;
+		}
+	}
+	return bet;
 }
 
 #endif

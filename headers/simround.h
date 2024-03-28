@@ -1,8 +1,6 @@
 #ifndef SIMROUND_H
 #define SIMROUND_H
 
-#define rand_float (float)rand()/(float)RAND_MAX
-
 const int NULL_BOT_ID = -1;
 const int NULL_FINAL_BET = -1;
 
@@ -81,17 +79,17 @@ void pileToken(struct Bot* bot, char tokenType) {
 	currentTokenNode->next = tokenToInsert;
 
 	setTokenToUsing(bot, tokenType);
-	printf("the bot %d chose the token %c\n", bot->botID, tokenType);
+	printf("the bot %d chose the token %s\n", bot->botID, tokenType == 'f' ? "FLOWER" : "SKULL");
 }
 
 
 int addSecondToken(struct Bot* bot) {
 	int botHasSkull = hasSkull(*bot);
 	int botHasFlower = hasFlower(*bot);
-	int willAddToken = rand_float < bot->initialOddsToAddToken;
+	int willAddToken = rand_float <= bot->initialOddsToAddToken;
 
 	if(botHasFlower && botHasSkull && willAddToken) {
-		pileToken(bot, rand_float < bot->oddsToAddSkull ? 's' : 'f');
+		pileToken(bot, rand_float <= bot->oddsToAddSkull ? 's' : 'f');
 	} else if(!botHasSkull && botHasFlower && willAddToken) {
 		pileToken(bot, 'f');
 	} else if(!botHasFlower && botHasSkull && willAddToken) {
@@ -106,10 +104,10 @@ int addSecondToken(struct Bot* bot) {
 int addMoreToken(struct Bot* bot) {
 	int botHasSkull = hasSkull(*bot);
 	int botHasFlower = hasFlower(*bot);
-	int willAddToken = rand_float < bot->oddsToAddMoreTokens;
+	int willAddToken = rand_float <= bot->oddsToAddMoreTokens;
 
 	if(botHasFlower && botHasSkull && willAddToken) {
-		pileToken(bot, rand_float < bot->oddsToAddSkull ? 's' : 'f');
+		pileToken(bot, rand_float <= bot->oddsToAddSkull ? 's' : 'f');
 	} else if(!botHasSkull && botHasFlower && willAddToken) {
 		pileToken(bot, 'f');
 	} else if(!botHasFlower && botHasSkull && willAddToken) {
@@ -134,17 +132,39 @@ int tryAddingToken(struct Bot* bot) {
 	return result;
 }
 
-int makeInitialBet(struct Bot* bot) {
+void makeInitialBet(struct Bot* bot, int *currentBet) {
 	int bet = calculateBotBet(bot, 0);
-
-	return bet;
+	*currentBet = bet;
+	printf("bot %d made an initial bet of %d\n", bot->botID, bet);
 }
 
-int tryBetting(struct Bot* bot) {
-	int result;
-
+// returns 0 if the bot refuses to increase the bet
+int tryBetting(struct Bot* bot, int *currentBet, int *botWithHighestBet) {
+	int bet = calculateBotBet(bot, *currentBet);
+	if(bet > *currentBet) {
+		*currentBet = bet;
+		*botWithHighestBet = bot->botID;
+		printf("bot %d made a bet of %d\n", bot->botID, bet);
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
+void initializeSkipCount(int *botsThatSkipped){
+	for(int i = 0; i < numOfBots; i++) {
+		botsThatSkipped[i] = 0;
+	}
+}
+
+int isBettingOver(int *botsThatSkipped) {
+	for(int i = 0; i < numOfBots; i++) {
+		if(botsThatSkipped[i] == 0){
+			return 0;
+		}
+	}
+	return 1;
+}
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 	The round goes through 4 phases:
 	1- First token selection
@@ -158,31 +178,46 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	int currentPlayingBotID = startingBotID;
 	int roundIsOver = 0; // 0 as False
 	int currentBet = 0;
+	int botWithHighestBet;
 
-	// phase 1: done
+	// PHASE 1: done
 	simulateSetupPhase(bots);
 	currentPhase = PILING_PHASE;
 
-	// phase 2 loop 
+	// PHASE 2 loop 
 	for(int i = currentPlayingBotID; currentPhase == PILING_PHASE; i++) {
 		int pilingIsOver = !(tryAddingToken(&bots[currentPlayingBotID]));
 
-		// phase 3 initial step
-		if(pilingIsOver) {currentBet = makeInitialBet(&(bots[currentPlayingBotID]));}
+		// PHASE 3 transition
+		if(pilingIsOver) {
+			printf("BETTING PHASE ENTERED\n");
+			makeInitialBet(&(bots[currentPlayingBotID]), &currentBet);
+			botWithHighestBet = currentPlayingBotID;
+		}
 		currentPhase = pilingIsOver ? BETTING_PHASE : PILING_PHASE;
 
 		// updates the current playing bot while maintaining their order
 		currentPlayingBotID = (i + 1) % numOfBots;
 	}
 
-	// phase 3 loop
-	// for(int i = currentPlayingBotID; currentPhase == BETTING_PHASE; i++) {
-	// 	printf("BETTING PHASE ENTERED\n");
-	// 	int bettingIsOver = !(tryBetting(&bots[currentPlayingBotID]));
+	int botsThatSkipped[numOfBots];
+	initializeSkipCount(botsThatSkipped);
+	// PHASE 3 loop
+	for(int i = currentPlayingBotID; currentPhase == BETTING_PHASE; i++) {
+		int botSkipped;
 
-	// 	currentPhase = bettingIsOver ? REVEALING_PHASE : BETTING_PHASE;
-	// 	currentPlayingBotID = (i + 1) % numOfBots;
-	// }
+		if(!botsThatSkipped[currentPlayingBotID]){
+			int botSkipped = !(tryBetting(&bots[currentPlayingBotID], &currentBet, &botWithHighestBet));
+		}
+		if(botSkipped) {
+			botsThatSkipped[currentPlayingBotID] = 1;
+		}
+		if(isBettingOver(botsThatSkipped)){
+			currentPhase = REVEALING_PHASE;
+			printf("BETTING IS OVER \n\n");
+		}
+		currentPlayingBotID = (i + 1) % numOfBots;
+	}
 
 	for(int i = 0; i < numOfBots; i++) {
 		softResetBotHand(&(bots[i]));
