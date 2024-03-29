@@ -22,7 +22,7 @@ struct RoundResults {
 	int winnerID;
 	int deadBotID;
 	int tokensPlayed;
-	 int skullsPlayed;
+	int skullsPlayed;
 	int finalBet;
 };
 
@@ -151,6 +151,7 @@ int tryBetting(struct Bot* bot, int *currentBet, int *botWithHighestBet) {
 	}
 }
 
+// botsThatSkipped[botID] is 0 if the bots[botID] didn't skip and 1 otherwise
 void initializeSkipCount(int *botsThatSkipped){
 	for(int i = 0; i < numOfBots; i++) {
 		botsThatSkipped[i] = 0;
@@ -158,13 +159,83 @@ void initializeSkipCount(int *botsThatSkipped){
 }
 
 int isBettingOver(int *botsThatSkipped) {
+	int numOfSkips = 0;
 	for(int i = 0; i < numOfBots; i++) {
-		if(botsThatSkipped[i] == 0){
-			return 0;
+		if(botsThatSkipped[i] == 1){
+			numOfSkips++;
 		}
 	}
-	return 1;
+	return (numOfSkips == (numOfBots - 1)) ? 1 : 0;
 }
+
+void initializeRevealingArr(struct TokenNode** tokensToBeRevealed, int length) {
+	for(int i = 0; i < length; i++) {
+		tokensToBeRevealed[i] = NULL;
+	}
+}
+
+int getNextEmptyIndex(struct TokenNode** tokensArray) {
+	for(int i = 0; ; i++){
+		if(tokensArray[i] == NULL) {
+			return i;
+		}
+	}
+}
+
+void revealOwnTokens(struct TokenNode* currentNode, struct TokenNode** tokensToBeRevealed, int *tokensLeft) {
+	if(currentNode->next != NULL) {
+		revealOwnTokens(currentNode->next, tokensToBeRevealed, tokensLeft);
+	}
+	if(*tokensLeft > 0) {
+		tokensToBeRevealed[getNextEmptyIndex(tokensToBeRevealed)] = currentNode;
+		*tokensLeft -= 1;
+		printf("the bot revealed his own token: %s\n", currentNode->token.tokenType);
+	}
+}
+
+void revealNextToken(struct Bot* bot, struct TokenNode** tokensToBeRevealed) {
+	int mostTrustedBotID = getMostTrustedBot(*bot);
+	int topOfPileReached = 0;
+	struct TokenNode* nodeToReveal = bots[mostTrustedBotID].playedTokens;
+
+	while(!topOfPileReached) {
+		if(nodeToReveal->next == NULL || nodeToReveal->token.status == REVEALED) {
+			topOfPileReached = 1;
+		} else {
+			nodeToReveal = nodeToReveal->next;
+		}
+	}
+
+	tokensToBeRevealed[getNextEmptyIndex(tokensToBeRevealed)] = nodeToReveal;
+	nodeToReveal->token.status = REVEALED;
+	bot->trustLevels[mostTrustedBotID].momentaryTrustLevel -= 0.1;
+	printf("bot %d revealed the token of bot %d: %s\n", bot->botID, mostTrustedBotID, nodeToReveal->token.tokenType);
+}
+
+int simulateRevealingPhase(struct Bot* bot, int currentBet) {
+	int result = 1;
+	struct TokenNode* tokensToBeRevealed[currentBet];
+	initializeRevealingArr(tokensToBeRevealed, currentBet);
+	int tokensLeft = currentBet;
+
+	// reveal its own tokens first
+	revealOwnTokens(bot->playedTokens, tokensToBeRevealed, &tokensLeft);
+
+	// reveals others players tokens one by one
+	while(tokensLeft > 0) {
+		revealNextToken(bot, tokensToBeRevealed);
+		tokensLeft--;
+	}
+
+	// checks if a skull was revealed and the bot
+	for(int i = 0; i < currentBet; i++) {
+		if(tokensToBeRevealed[i]->token.tokenType == "skull") {
+			result = 0;
+		}
+	}
+	return result;
+}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 	The round goes through 4 phases:
 	1- First token selection
@@ -175,48 +246,64 @@ int isBettingOver(int *botsThatSkipped) {
 struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	struct RoundResults *roundResults = malloc(sizeof(struct RoundResults));
 	enum RoundPhase currentPhase = SETUP_PHASE;
-	int currentPlayingBotID = startingBotID;
+	int playingBotID = startingBotID;
 	int roundIsOver = 0; // 0 as False
 	int currentBet = 0;
 	int botWithHighestBet;
 
-	// PHASE 1: done
+	printf("THE SETUP PHASE HAS BEGAN\n");
 	simulateSetupPhase(bots);
+	// PHASE 1: done
+	printf("THE SETUP IS OVER\n\n");
 	currentPhase = PILING_PHASE;
 
+	printf("THE PILING PHASE PHASE HAS BEGAN\n");
 	// PHASE 2 loop 
-	for(int i = currentPlayingBotID; currentPhase == PILING_PHASE; i++) {
-		int pilingIsOver = !(tryAddingToken(&bots[currentPlayingBotID]));
+	for(int i = playingBotID; currentPhase == PILING_PHASE; i++) {
+		int pilingIsOver = !(tryAddingToken(&bots[playingBotID]));
 
 		// PHASE 3 transition
 		if(pilingIsOver) {
-			printf("BETTING PHASE ENTERED\n");
-			makeInitialBet(&(bots[currentPlayingBotID]), &currentBet);
-			botWithHighestBet = currentPlayingBotID;
+			printf("THE PILINGE IS OVER\n\n");
+			printf("THE BETTING PHASE HAS BEGAN\n");
+			makeInitialBet(&(bots[playingBotID]), &currentBet);
+			botWithHighestBet = playingBotID;
 		}
 		currentPhase = pilingIsOver ? BETTING_PHASE : PILING_PHASE;
 
 		// updates the current playing bot while maintaining their order
-		currentPlayingBotID = (i + 1) % numOfBots;
+		playingBotID = (i + 1) % numOfBots;
 	}
 
 	int botsThatSkipped[numOfBots];
 	initializeSkipCount(botsThatSkipped);
 	// PHASE 3 loop
-	for(int i = currentPlayingBotID; currentPhase == BETTING_PHASE; i++) {
+	for(int i = playingBotID; currentPhase == BETTING_PHASE; i++) {
 		int botSkipped;
 
-		if(!botsThatSkipped[currentPlayingBotID]){
-			int botSkipped = !(tryBetting(&bots[currentPlayingBotID], &currentBet, &botWithHighestBet));
+		if(!botsThatSkipped[playingBotID]){
+			botSkipped = !(tryBetting(&bots[playingBotID], &currentBet, &botWithHighestBet));
 		}
 		if(botSkipped) {
-			botsThatSkipped[currentPlayingBotID] = 1;
+			botsThatSkipped[playingBotID] = 1;
 		}
 		if(isBettingOver(botsThatSkipped)){
 			currentPhase = REVEALING_PHASE;
-			printf("BETTING IS OVER \n\n");
+			printf("THE BETTING IS OVER \n\n");
+			continue;
 		}
-		currentPlayingBotID = (i + 1) % numOfBots;
+		playingBotID = (i + 1) % numOfBots;
+	}
+
+	playingBotID = botWithHighestBet;
+	printf("THE REVEALING PHASE HAS BEGAN\n");
+	int revealWasSuccessfull = simulateRevealingPhase(&bots[playingBotID], currentBet);
+	printf("THE REVEALING IS OVER\n\n");
+
+	if(revealWasSuccessfull){
+		printf("BOT %d WON A ROUND BY REVEALING %d FLOWERS\n\n", playingBotID, currentBet);
+	} else {
+		printf("BOT %d REVEALED A SKULL AND LOST A ROUND\n\n", playingBotID);
 	}
 
 	for(int i = 0; i < numOfBots; i++) {

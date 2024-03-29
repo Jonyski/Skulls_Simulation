@@ -1,7 +1,7 @@
 TODO:
 - reset bots hands after each round (DONE)
 - reset bots hands after each game
-- add betting phase simulation
+- add betting phase simulation (DONE)
 - detect the 64 bytes being leaked in 1 block (according to valgrind) (DONE)
 - add revealing phase simulation
 - add bot stats tracking

@@ -10,6 +10,7 @@
 enum TokenStatus {
 	AVAILABLE,
 	USING,
+	REVEALED,
 	REMOVED
 };
 
@@ -150,6 +151,7 @@ int setTokenToUsing(struct Bot* bot, char tokenType) {
 	return 0;
 }
 
+// recursive algorithm to free the playedTokens piles
 void freePile(struct TokenNode* node) {
 	if(node == NULL) {
 		return;
@@ -162,7 +164,7 @@ void freePile(struct TokenNode* node) {
 // used at the end of each round to reset hand and pile
 void softResetBotHand(struct Bot* bot) {
 	for(int i = 0; i < HAND_SIZE; i++) {
-		if(bot->hand[i].status == USING) {
+		if(bot->hand[i].status == USING || bot->hand[i].status == REVEALED) {
 			bot->hand[i].status = AVAILABLE;
 		}
 	}
@@ -252,6 +254,22 @@ int calculateBotBet(struct Bot* bot, int currentBet) {
 		}
 	}
 	return bet;
+}
+
+// returns the botID
+int getMostTrustedBot(struct Bot bot) {
+	int mostTrustedBot = -1;
+	for(int i = 0; i < numOfBots; i++){
+		if(i == bot.botID) {
+			continue;
+		}
+		if(mostTrustedBot == -1){
+			mostTrustedBot = i;
+		} else {
+			mostTrustedBot = bot.trustLevels[mostTrustedBot].momentaryTrustLevel > bot.trustLevels[i].momentaryTrustLevel ? mostTrustedBot : i;
+		}
+	}
+	return mostTrustedBot;
 }
 
 #endif
