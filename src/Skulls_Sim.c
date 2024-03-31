@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include <math.h>
 
 #define rand_float (float)rand()/(float)RAND_MAX

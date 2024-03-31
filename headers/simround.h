@@ -20,7 +20,7 @@ struct BotRoundStats {
 
 struct RoundResults {
 	int winnerID;
-	int deadBotID;
+	int loserID;
 	int tokensPlayed;
 	int skullsPlayed;
 	int finalBet;
@@ -49,6 +49,9 @@ void selectFirstToken(struct Bot* bot) {
 // makes all bots add their first token to their piles
 void simulateSetupPhase(struct Bot* bots){
 	for(int i = 0; i < numOfBots; i++) {
+		if(!bots[i].isAlive) {
+			continue;
+		}
 		selectFirstToken(&bots[i]);
 		// testing
 		printf("the bot %d selects the first token \"%s\"\n"
@@ -251,15 +254,21 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	int currentBet = 0;
 	int botWithHighestBet;
 
+	// PHASE 1
 	printf("THE SETUP PHASE HAS BEGAN\n");
 	simulateSetupPhase(bots);
-	// PHASE 1: done
 	printf("THE SETUP IS OVER\n\n");
 	currentPhase = PILING_PHASE;
 
 	printf("THE PILING PHASE PHASE HAS BEGAN\n");
 	// PHASE 2 loop 
 	for(int i = playingBotID; currentPhase == PILING_PHASE; i++) {
+		// if the bot is dead it doesn't play
+		if(!bots[playingBotID].isAlive) {
+			playingBotID = (i + 1) % numOfBots;
+			continue;
+		}
+
 		int pilingIsOver = !(tryAddingToken(&bots[playingBotID]));
 
 		// PHASE 3 transition
@@ -281,6 +290,13 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	for(int i = playingBotID; currentPhase == BETTING_PHASE; i++) {
 		int botSkipped;
 
+		// if the bot is dead, auto skips
+		if(!bots[playingBotID].isAlive) {
+			botsThatSkipped[playingBotID] = 1;
+			playingBotID = (i + 1) % numOfBots;
+			continue;
+		}
+
 		if(!botsThatSkipped[playingBotID]){
 			botSkipped = !(tryBetting(&bots[playingBotID], &currentBet, &botWithHighestBet));
 		}
@@ -295,16 +311,26 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 		playingBotID = (i + 1) % numOfBots;
 	}
 
+	// PHASE 4
 	playingBotID = botWithHighestBet;
 	printf("THE REVEALING PHASE HAS BEGAN\n");
 	int revealWasSuccessfull = simulateRevealingPhase(&bots[playingBotID], currentBet);
 	printf("THE REVEALING IS OVER\n\n");
 
+	// show the bet result
 	if(revealWasSuccessfull){
 		printf("BOT %d WON A ROUND BY REVEALING %d FLOWERS\n\n", playingBotID, currentBet);
+		roundResults->winnerID = playingBotID;
+		roundResults->loserID = NULL_BOT_ID;
 	} else {
 		printf("BOT %d REVEALED A SKULL AND LOST A ROUND\n\n", playingBotID);
+		roundResults->winnerID = NULL_BOT_ID;
+		roundResults->loserID = playingBotID;
 	}
+
+	roundResults->tokensPlayed = getTotalTokensPlayed();
+	roundResults->skullsPlayed = getTotalSkullsPlayed();
+	roundResults->finalBet = currentBet;
 
 	for(int i = 0; i < numOfBots; i++) {
 		softResetBotHand(&(bots[i]));
