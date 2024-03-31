@@ -1,9 +1,6 @@
 #ifndef BOTS_H
 #define BOTS_H
 
-#include <stdlib.h>
-#include <string.h>
-
 #define HAND_SIZE 4
 
 // AVAILABLE tokens are on hand, USING tokens are on the pile, and REMOVED tokens were lost
@@ -34,6 +31,7 @@ struct TokenNode {
 
 struct Bot {
 	int botID;
+	int isAlive;
 	int roundsWon;
 	struct Token hand[HAND_SIZE];
 	struct TokenNode* playedTokens;
@@ -94,6 +92,7 @@ struct Bot* initializeBots() {
 	for(int i = 0; i < numOfBots; i++) {
 		struct TrustingLevel* baseTrustLevels = initializeTrust(id);
 		botsList[id].botID = id;
+		botsList[id].isAlive = 1;
 		botsList[id].roundsWon = 0;
 		memcpy(botsList[id].hand, baseHand, HAND_SIZE * sizeof(baseHand[0]));
 		botsList[id].playedTokens = NULL;
@@ -190,6 +189,16 @@ int getTotalTokensPlayed() {
 	return totalTokensPlayed;
 }
 
+int getTotalSkullsPlayed() {
+	int skullsPlayed = 0;
+	for(int i = 0; i < numOfBots; i++) {
+		if(bots[i].hand[0].status == USING) {
+			skullsPlayed++;
+		}
+	}
+	return skullsPlayed;
+}
+
 float generateTrustScore(struct Bot* bot) {
 	float trustScore = 0;
 	int totalTokensPlayed = 0;
@@ -256,12 +265,12 @@ int calculateBotBet(struct Bot* bot, int currentBet) {
 	return bet;
 }
 
-// returns the botID
+// returns the botID of the bot most trusted by the one passed as argument
 int getMostTrustedBot(struct Bot bot) {
 	int mostTrustedBot = -1;
 	for(int i = 0; i < numOfBots; i++){
 		if(i == bot.botID) {
-			continue;
+			continue; // the bot obviously trusts himself the most ;^]
 		}
 		if(mostTrustedBot == -1){
 			mostTrustedBot = i;
