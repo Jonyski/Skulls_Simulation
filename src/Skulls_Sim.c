@@ -4,9 +4,12 @@
 #include <string.h>
 #include <math.h>
 
-#define rand_float (float)rand()/(float)RAND_MAX
-struct Bot* bots; // pointer to array objets (bots)
+#include "../headers/skullssim.h"
+
+struct Bot* bots;
 int numOfBots;
+const int NULL_BOT_ID = -1;
+const int NULL_FINAL_BET = -1;
 
 #include "../headers/bots.h" // contains the Bot struct, its dependencies and some handy functions
 #include "../headers/simround.h" // contains the necessary tools to simulate 1 round of Skull
