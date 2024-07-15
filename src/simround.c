@@ -5,40 +5,40 @@
 #include "../headers/bots.h"
 #include "../headers/simround.h"
 
-void selectFirstToken(struct Bot* bot) {
+void selectFirstToken(struct Bot *bot) {
 	struct Token newToken;
-	newToken.status = USING;
+	struct TokenNode *firstTokenNode = malloc(sizeof(struct TokenNode));
 
-	if(rand_float <= bot->oddsToStartWithSkull) {
-		newToken.tokenType = "skull";
-	} else {
-		newToken.tokenType = "flower";
-	}
+	do {
+		if(rand_float <= bot->oddsToStartWithSkull) {
+			newToken.tokenType = "skull";
+		} else {
+			newToken.tokenType = "flower";
+		}
 
-	struct TokenNode* firstTokenNode = malloc(sizeof(struct TokenNode));
-	firstTokenNode->token = newToken;
-	firstTokenNode->next = NULL;
+		firstTokenNode->token = newToken;
+		firstTokenNode->next = NULL;
 
-	bot->playedTokens = firstTokenNode;
+		bot->playedTokens = firstTokenNode;
 
-	setTokenToUsing(bot, newToken.tokenType == "flower" ? 'f' : 's');
+	} while(!setTokenToUsing(bot, newToken.tokenType == "flower" ? 'f' : 's'));	
 }
 
 // makes all bots add their first token to their piles
-void simulateSetupPhase(struct Bot* bots){
+// TODO: remove bots arg, redundance
+void simulateSetupPhase(struct Bot *bots){
 	for(int i = 0; i < numOfBots; i++) {
 		if(!bots[i].isAlive) {
 			continue;
 		}
 		selectFirstToken(&bots[i]);
 		// testing
-		printf("the bot %d selects the first token \"%s\"\n"
-			  , i, bots[i].playedTokens->token.tokenType);
+		printf("the bot %d selects the first token \"%s\"\n", i, bots[i].playedTokens->token.tokenType);
 	}
 }
 
-void pileToken(struct Bot* bot, char tokenType) {
-	struct TokenNode* currentTokenNode = bot->playedTokens;
+void pileToken(struct Bot *bot, char tokenType) {
+	struct TokenNode *currentTokenNode = bot->playedTokens;
 	int topOfPileReached = 0;
 
 	while(!topOfPileReached) {
@@ -64,7 +64,7 @@ void pileToken(struct Bot* bot, char tokenType) {
 }
 
 
-int addSecondToken(struct Bot* bot) {
+int addSecondToken(struct Bot *bot) {
 	int botHasSkull = hasSkull(*bot);
 	int botHasFlower = hasFlower(*bot);
 	int willAddToken = rand_float <= bot->initialOddsToAddToken;
@@ -82,7 +82,7 @@ int addSecondToken(struct Bot* bot) {
 	return 1;
 }
 
-int addMoreToken(struct Bot* bot) {
+int addMoreToken(struct Bot *bot) {
 	int botHasSkull = hasSkull(*bot);
 	int botHasFlower = hasFlower(*bot);
 	int willAddToken = rand_float <= bot->oddsToAddMoreTokens;
@@ -101,7 +101,7 @@ int addMoreToken(struct Bot* bot) {
 }
 
 // returns 0 (false) when the bot refuses to add a token
-int tryAddingToken(struct Bot* bot) {
+int tryAddingToken(struct Bot *bot) {
 	int result;
 
 	if(bot->playedTokens->next == NULL) {
@@ -113,14 +113,14 @@ int tryAddingToken(struct Bot* bot) {
 	return result;
 }
 
-void makeInitialBet(struct Bot* bot, int *currentBet) {
+void makeInitialBet(struct Bot *bot, int *currentBet) {
 	int bet = calculateBotBet(bot, 0);
 	*currentBet = bet;
 	printf("bot %d made an initial bet of %d\n", bot->botID, bet);
 }
 
 // returns 0 if the bot refuses to increase the bet
-int tryBetting(struct Bot* bot, int *currentBet, int *botWithHighestBet) {
+int tryBetting(struct Bot *bot, int *currentBet, int *botWithHighestBet) {
 	int bet = calculateBotBet(bot, *currentBet);
 	if(bet > *currentBet) {
 		*currentBet = bet;
@@ -149,7 +149,7 @@ int isBettingOver(int *botsThatSkipped) {
 	return (numOfSkips == (numOfBots - 1)) ? 1 : 0;
 }
 
-void initializeRevealingArr(struct TokenNode** tokensToBeRevealed, int length) {
+void initializeRevealingArr(struct TokenNode **tokensToBeRevealed, int length) {
 	for(int i = 0; i < length; i++) {
 		tokensToBeRevealed[i] = NULL;
 	}
@@ -163,7 +163,7 @@ int getNextEmptyIndex(struct TokenNode** tokensArray) {
 	}
 }
 
-void revealOwnTokens(struct TokenNode* currentNode, struct TokenNode** tokensToBeRevealed, int *tokensLeft) {
+void revealOwnTokens(struct TokenNode *currentNode, struct TokenNode **tokensToBeRevealed, int *tokensLeft) {
 	if(currentNode->next != NULL) {
 		revealOwnTokens(currentNode->next, tokensToBeRevealed, tokensLeft);
 	}
@@ -174,7 +174,7 @@ void revealOwnTokens(struct TokenNode* currentNode, struct TokenNode** tokensToB
 	}
 }
 
-void revealNextToken(struct Bot* bot, struct TokenNode** tokensToBeRevealed) {
+void revealNextToken(struct Bot *bot, struct TokenNode **tokensToBeRevealed) {
 	int mostTrustedBotID = getMostTrustedBot(*bot);
 	int topOfPileReached = 0;
 	struct TokenNode* nodeToReveal = bots[mostTrustedBotID].playedTokens;
@@ -193,7 +193,7 @@ void revealNextToken(struct Bot* bot, struct TokenNode** tokensToBeRevealed) {
 	printf("bot %d revealed the token of bot %d: %s\n", bot->botID, mostTrustedBotID, nodeToReveal->token.tokenType);
 }
 
-int simulateRevealingPhase(struct Bot* bot, int currentBet) {
+int simulateRevealingPhase(struct Bot *bot, int currentBet) {
 	int result = 1;
 	struct TokenNode* tokensToBeRevealed[currentBet];
 	initializeRevealingArr(tokensToBeRevealed, currentBet);
@@ -224,11 +224,12 @@ int simulateRevealingPhase(struct Bot* bot, int currentBet) {
 	3- Betting
 	4- Revealing Tokens 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// TODO: remove bots argument (its redundant since bots is a global variable)
 struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	struct RoundResults *roundResults = malloc(sizeof(struct RoundResults));
 	enum RoundPhase currentPhase = SETUP_PHASE;
 	int playingBotID = startingBotID;
-	int roundIsOver = 0; // 0 as False
+	int roundIsOver = 0;
 	int currentBet = 0;
 	int botWithHighestBet;
 
@@ -241,7 +242,6 @@ struct RoundResults* simulateRound(struct Bot bots[], int startingBotID) {
 	printf("THE PILING PHASE PHASE HAS BEGAN\n");
 	// PHASE 2 loop 
 	for(int i = playingBotID; currentPhase == PILING_PHASE; i++) {
-		// if the bot is dead it doesn't play
 		if(!bots[playingBotID].isAlive) {
 			playingBotID = (i + 1) % numOfBots;
 			continue;

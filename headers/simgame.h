@@ -22,14 +22,14 @@ struct GameResults {
 	float avgFinalBet;
 };
 
-void updateGameResults(struct GameResults* gameResults, struct RoundResults* roundResults);
+void updateGameResults(struct GameResults *gameResults, struct RoundResults *roundResults);
 
 int shouldBotDie(struct Bot bot);
 
 // returns ID of last bot alive or the NULL_BOT_ID if there's more than one alive
 int isThereOneSurvivor();
 
-struct GameResults* simulateGame();
+struct GameResults *simulateGame();
 
 
 #endif

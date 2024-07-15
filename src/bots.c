@@ -5,20 +5,19 @@
 #include "../headers/skullssim.h"
 #include "../headers/bots.h"
 
-struct TrustingLevel* initializeTrust(int botID) {
-	struct TrustingLevel* baseTrustLevels = (struct TrustingLevel*)malloc(numOfBots * sizeof(struct TrustingLevel));
+struct TrustingLevel *initializeTrust(int botID) {
+	struct TrustingLevel *baseTrustLevels = (struct TrustingLevel*)malloc(numOfBots * sizeof(struct TrustingLevel));
 	if(baseTrustLevels == NULL) {
 		exit(1);
 	}
 
-   // The bot should trust itself but doesn't know at first if it can trust in the other bots
+	// The bot should trust itself but doesn't know at first if it can trust in the other bots
 	for(int targetID = 0; targetID < numOfBots; targetID++) {
+		baseTrustLevels[targetID].targetBotID = targetID;
 		if(targetID == botID){
-			baseTrustLevels[targetID].targetBotID = targetID;
 			baseTrustLevels[targetID].totalTrustLevel = 1.0;
 			baseTrustLevels[targetID].momentaryTrustLevel = 1.0;
 		} else {
-			baseTrustLevels[targetID].targetBotID = targetID;
 			baseTrustLevels[targetID].totalTrustLevel = 0.5;
 			baseTrustLevels[targetID].momentaryTrustLevel = 0.5;
 		}
@@ -26,8 +25,8 @@ struct TrustingLevel* initializeTrust(int botID) {
 	return baseTrustLevels;
 }
 
-struct Token* initializeHand() {
-	struct Token* baseHand = (struct Token*)malloc(HAND_SIZE * sizeof(struct Token));
+struct Token *initializeHand() {
+	struct Token *baseHand = (struct Token*)malloc(HAND_SIZE * sizeof(struct Token));
 	if(baseHand == NULL) {
 		exit(1);
 	}
@@ -43,33 +42,32 @@ struct Token* initializeHand() {
 	return baseHand;
 }
 
-struct Bot* initializeBots() {
-	int id = 0;
-	struct Bot* botsList = (struct Bot*)malloc(numOfBots * sizeof(struct Bot));
-	struct Token* baseHand = initializeHand();
+struct Bot *initializeBots() {
+	struct Bot *botsList = (struct Bot*)malloc(numOfBots * sizeof(struct Bot));
+	struct Token *baseHand = initializeHand();
 
-	for(int i = 0; i < numOfBots; i++) {
+	for(int id = 0; id < numOfBots; id++) {
 		struct TrustingLevel* baseTrustLevels = initializeTrust(id);
 		botsList[id].botID = id;
 		botsList[id].isAlive = 1;
 		botsList[id].roundsWon = 0;
 		memcpy(botsList[id].hand, baseHand, HAND_SIZE * sizeof(baseHand[0]));
-		botsList[id].playedTokens = NULL;
+		botsList[id].playedTokens = NULL; // TODO: initialize the linked list here already (why the fuck is it not?)
 		botsList[id].trustLevels = baseTrustLevels;
 		botsList[id].oddsToStartWithSkull = 0.5;
 		botsList[id].initialOddsToAddToken = 0.5;
 		botsList[id].oddsToAddMoreTokens = 0.5;
 		botsList[id].oddsToAddSkull = 0.5;
+		botsList[id].bettingConfidence = 0.5;
 		botsList[id].bluffBoldness = 0.5;
 		botsList[id].oddsToGoBerserk = 0.06;
 		botsList[id].confidenceToIncreaseBet = 0.4;
-		id++;
 	}
 	free(baseHand);
 	return botsList;
 }
 
-void freeBots(struct Bot* bots) {
+void freeBots(struct Bot *bots) {
 	for(int i = 0; i < numOfBots; i++) {
 		free(bots[i].trustLevels);
 		bots[i].trustLevels = NULL;
@@ -95,8 +93,8 @@ int hasFlower(struct Bot bot) {
 	return 0;
 }
 
-int setTokenToUsing(struct Bot* bot, char tokenType) {
-	char* realTokenType = tokenType == 'f' ? "flower" : "skull";
+int setTokenToUsing(struct Bot *bot, char tokenType) {
+	char *realTokenType = tokenType == 'f' ? "flower" : "skull";
 
 	for(int i = 0; i < HAND_SIZE; i++) {
 		if(bot->hand[i].tokenType == realTokenType && bot->hand[i].status == AVAILABLE) {
@@ -108,7 +106,7 @@ int setTokenToUsing(struct Bot* bot, char tokenType) {
 	return 0;
 }
 
-void freePile(struct TokenNode* node) {
+void freePile(struct TokenNode *node) {
 	if(node == NULL) {
 		return;
 	}
@@ -117,7 +115,7 @@ void freePile(struct TokenNode* node) {
 	freePile(nextNode);
 }
 
-void softResetBotHand(struct Bot* bot) {
+void softResetBotHand(struct Bot *bot) {
 	for(int i = 0; i < HAND_SIZE; i++) {
 		if(bot->hand[i].status == USING || bot->hand[i].status == REVEALED) {
 			bot->hand[i].status = AVAILABLE;
@@ -139,7 +137,7 @@ void hardResetBotsHands() {
 
 int getPileSize(struct Bot bot) {
 	int pileSize = 0;
-	struct TokenNode* currentTokenNode = bot.playedTokens;
+	struct TokenNode *currentTokenNode = bot.playedTokens;
 	while(currentTokenNode != NULL) {
 		pileSize++;
 		currentTokenNode = currentTokenNode->next;
@@ -165,7 +163,7 @@ int getTotalSkullsPlayed() {
 	return skullsPlayed;
 }
 
-float generateTrustScore(struct Bot* bot) {
+float generateTrustScore(struct Bot *bot) {
 	float trustScore = 0;
 	int totalTokensPlayed = 0;
 	for(int i = 0; i < numOfBots; i++) {
@@ -177,18 +175,19 @@ float generateTrustScore(struct Bot* bot) {
 	return trustScore;
 }
 
-int hasPlayedSkull(struct Bot* bot) {
+int hasPlayedSkull(struct Bot *bot) {
 	if(bot->hand[0].status == USING) {
 		return 1;
 	}
 	return 0;
 }
 
-float calculateBotConfidence(struct Bot* bot, int currentBet) {
+// TODO: reconsider this formula
+float calculateBotConfidence(struct Bot *bot, int currentBet) {
 	float trustScore = generateTrustScore(bot);
 	float confidence = bot->bettingConfidence;
 	float situationalConfidence = currentBet == 0 ? bot->bettingConfidence : bot->confidenceToIncreaseBet;
-	int playedSkulllayedSkull = hasPlayedSkull(bot);
+	int playedSkull = hasPlayedSkull(bot);
 	float totalConfidence = (5 * trustScore + 3 * ((2 * confidence + 3 * situationalConfidence) / 5)) / 8;
 	return totalConfidence;
 }
@@ -206,7 +205,7 @@ int bluff(float boldness, float confidence, int numOfTokens) {
 	}
 }
 
-int calculateBotBet(struct Bot* bot, int currentBet) {
+int calculateBotBet(struct Bot *bot, int currentBet) {
 	int bet;
 	int numOfTokens = getTotalTokensPlayed();
 	int playedSkull = hasPlayedSkull(bot);
@@ -246,10 +245,10 @@ int getMostTrustedBot(struct Bot bot) {
 	return mostTrustedBot;
 }
 
-void removeToken(struct Bot* bot) {
+void removeToken(struct Bot *bot) {
 	int tokenRemoved = 0;
 	while(!tokenRemoved) {
-		int randToken = ceil(rand_float * HAND_SIZE);
+		int randToken = floor(rand_float * HAND_SIZE);
 		if(bot->hand[randToken].status == REMOVED) {
 			continue;
 		} else {

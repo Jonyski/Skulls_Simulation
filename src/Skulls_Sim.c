@@ -6,7 +6,7 @@
 
 #include "../headers/skullssim.h"
 
-struct Bot* bots;
+struct Bot *bots;
 int numOfBots;
 const int NULL_BOT_ID = -1;
 const int NULL_FINAL_BET = -1;
@@ -30,7 +30,7 @@ int main(int argc, char const *argv[]) {
 	}
 
 	srand(time(NULL));
-	clock_t beginTime = clock();
+	clock_t beginTime = clock(); // just for curiosity sakes
 
 	for (int i = 0; i < numOfGames; i++){
 		struct GameResults* gameResults = simulateGame();

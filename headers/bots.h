@@ -26,7 +26,7 @@ struct TrustingLevel {
 // nodes of a linked list that represents the pile of played tokens
 struct TokenNode {
 	struct Token token;
-	struct TokenNode* next;
+	struct TokenNode *next;
 };
 
 // probably the most important struct, it represents the evolving bots
@@ -35,8 +35,8 @@ struct Bot {
 	int isAlive;
 	int roundsWon;
 	struct Token hand[HAND_SIZE];
-	struct TokenNode* playedTokens;
-	struct TrustingLevel* trustLevels; // will be used to determine the bet
+	struct TokenNode *playedTokens;
+	struct TrustingLevel *trustLevels; // will be used to determine the bet
 	float oddsToStartWithSkull; // when the first token is played
 	float initialOddsToAddToken; // basically the odds to put the 2nd token
 	float oddsToAddMoreTokens; // decreases as more tokens are played
@@ -47,26 +47,26 @@ struct Bot {
 	float confidenceToIncreaseBet; // it's only part of the formula to determine the odds of increasing the bet
 };
 
-struct TrustingLevel* initializeTrust(int botID);
+struct TrustingLevel *initializeTrust(int botID);
 
-struct Token* initializeHand();
+struct Token *initializeHand();
 
-struct Bot* initializeBots();
+struct Bot *initializeBots();
 
 // for memory management ease
-void freeBots(struct Bot* bots);
+void freeBots(struct Bot *bots);
 
 int hasSkull(struct Bot bot);
 
 int hasFlower(struct Bot bot);
 
-int setTokenToUsing(struct Bot* bot, char tokenType);
+int setTokenToUsing(struct Bot *bot, char tokenType);
 
 // recursive algorithm to free the playedTokens piles
-void freePile(struct TokenNode* node);
+void freePile(struct TokenNode *node);
 
 // used at the end of each round to reset hand and pile
-void softResetBotHand(struct Bot* bot);
+void softResetBotHand(struct Bot *bot);
 
 // sets the bot hand to its initial status (all tokens are available)
 void hardResetBotsHands();
@@ -79,19 +79,19 @@ int getTotalTokensPlayed();
 // get the number of skulls played by all bots together
 int getTotalSkullsPlayed();
 
-float generateTrustScore(struct Bot* bot);
+float generateTrustScore(struct Bot *bot);
 
-int hasPlayedSkull(struct Bot* bot);
+int hasPlayedSkull(struct Bot *bot);
 
-float calculateBotConfidence(struct Bot* bot, int currentBet);
+float calculateBotConfidence(struct Bot *bot, int currentBet);
 
 int bluff(float boldness, float confidence, int numOfTokens);
 
-int calculateBotBet(struct Bot* bot, int currentBet);
+int calculateBotBet(struct Bot *bot, int currentBet);
 
 // returns the botID of the bot most trusted by the one passed as argument
 int getMostTrustedBot(struct Bot bot);
 
-void removeToken(struct Bot* bot);
+void removeToken(struct Bot *bot);
 
 #endif
